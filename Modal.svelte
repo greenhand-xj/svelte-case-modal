@@ -1,8 +1,58 @@
 <script>
-  export let title = "modal-title";
-  let isOpen = true;
+  import { onMount } from 'svelte'
+  import { close, modal } from './modal'
+  import { fade, scale } from 'svelte/transition'
+  export let title = 'modal-title'
+  let isOpen = true
+  $: {
+    if (isOpen) {
+      document.body.classList.add('prevent-scroll')
+    } else {
+      document.body.classList.remove('prevent-scroll')
+    }
+  }
+  let modalElement = null
+  const handleKeydown = e => {
+    if (e.keyCode === 27) {
+      close()
+      $modal.firstFocusElement.focus()
+    }
+    const allFocusableElements = modalElement.querySelectorAll('a[href],input:not(:disabled),button:not(:disabled),area,textarea:not(:disabled),[tabindex="0"]')
+    const first = allFocusableElements[0]
+    const len = allFocusableElements.length
+    const last = allFocusableElements[len - 1]
+    if (e.keyCode === 9) {
+      if (document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+  }
+  onMount(() => {
+    document.addEventListener('keydown', handleKeydown)
+    return () => document.removeEventListener('keydown', handleKeydown)
+  })
 </script>
 
+<main>
+  <div
+    transition:fade
+    class="modal-wrapper"
+    on:click={e => {
+      if (e.target === e.currentTarget) {
+        close()
+      }
+    }}
+  >
+    <div bind:this={modalElement} class="modal" transition:scale={{ delay: 150, duration: 300 }}>
+      <div class="modal-head">
+        <h3 class="title">{title}</h3>
+        <button type="button" on:click={() => close()}>&#10005</button>
+      </div>
+      <slot>Description</slot>
+    </div>
+  </div>
+</main>
 
 <style>
   .modal-wrapper {
@@ -54,21 +104,7 @@
   button:active {
     background-color: rgba(25, 25, 25, 0.4);
   }
-  .preventScroll {
+  :global(.prevent-scroll) {
     overflow-y: hidden;
   }
 </style>
-
-<main>
-  <div class="modal-wrapper">
-    <div class="modal">
-      <div class="modal-head">
-        <h3 class="title">{title}</h3>
-        <button type="button">&#10005</button>
-      </div>
-      <slot>
-        Description
-      </slot>
-    </div>
-  </div>
-</main>
